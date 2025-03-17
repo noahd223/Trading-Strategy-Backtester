@@ -115,6 +115,7 @@ def plot_results(basket_results, sp500_returns):
 # Main execution
 if __name__ == "__main__":
     # Define basket of stocks and benchmark
+    # TODO: Dynamically change basket
     basket = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA']  # Example basket
     benchmark = ['SPY']  # S&P 500 proxy
     tickers = basket + benchmark
