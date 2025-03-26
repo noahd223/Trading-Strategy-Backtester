@@ -1,6 +1,6 @@
 import yfinance as yf
 
-def get_historical_data(ticker="SPY", start_date="2000-01-01", end_date="2025-01-01"):
+def get_historical_data(ticker="SPY", start_date="2015-01-01", end_date="2025-01-01"):
     """Fetch historical price data from Yahoo Finance"""
     df = yf.download(ticker, start=start_date, end=end_date, progress=False)
     # Ensure we only get the 'Close' column and rename it

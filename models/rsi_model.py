@@ -66,10 +66,8 @@ random_search = RandomizedSearchCV(
         'min_samples_leaf': [1, 2, 4]
     },
     n_iter=50,
-    cv=TimeSeriesSplit(n_splits=3),
-    scoring=custom_scorer,
-    n_jobs=-1,
-    random_state=42
+    cv=TimeSeriesSplit(n_splits=5),
+    scoring=custom_scorer
 )
 
 # Train the model

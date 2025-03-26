@@ -1,3 +1,5 @@
+# Manual backtester for the two strategies I have added (use for testing models on new set of data)
+
 import matplotlib.pyplot as plt
 import numpy as np
 from data.data import get_historical_data
