@@ -90,10 +90,4 @@ Contributions to enhance the functionality or add new features are welcome. Plea
 4. Push your changes to your fork.
 5. Submit a pull request to the main repository.
 
-## License
-
-This project is licensed under the MIT License. See the `LICENSE` file for more details.
-
----
-
 *Note: This project is intended for educational purposes to explore the application of machine learning in trading strategies. It is not intended for live trading or financial advice.* 
