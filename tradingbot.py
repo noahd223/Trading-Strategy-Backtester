@@ -1,139 +1,127 @@
-from datetime import datetime, timedelta
-import yfinance as yf
-import pandas as pd
+import matplotlib.pyplot as plt
 import numpy as np
-import plotly.express as px
-import plotly.graph_objects as go
+from data.data import get_historical_data
+from strategies.moving_average import MovingAverageStrategy
+from strategies.mean_reversion import MeanReversionStrategy
 
-# Download historical data
-def download_data(tickers, start_date, end_date):
-    data = yf.download(tickers, start=start_date, end=end_date)["Close"]
-    return data
 
-# Calculate strategy returns for a single stock
-def moving_average_strategy(data, stock_ticker, short_window=50, long_window=200):
-    df = pd.DataFrame({stock_ticker: data[stock_ticker]})
+def get_strategy_choice():
+    """Prompt user to select a strategy"""
+    print("\nAvailable Strategies:")
+    print("1. Moving Average Crossover (50/200)")
+    print("2. Mean Reversion (Bollinger Bands)")
+    print("3. Compare Both Strategies")
+    print("4. Exit")
     
-    # Calculate moving averages
-    df['SMA50'] = df[stock_ticker].rolling(short_window).mean()
-    df['SMA200'] = df[stock_ticker].rolling(long_window).mean()
-    
-    # Generate signals
-    df['position'] = (df['SMA50'] > df['SMA200']).astype(int).shift(1).fillna(0)
-    
-    # Calculate returns
-    df['daily_return'] = df[stock_ticker].pct_change()
-    df['strategy_return'] = df['position'] * df['daily_return']
-    df['cumulative_strategy'] = (1 + df['strategy_return']).cumprod()
-    
-    return df['cumulative_strategy']
+    while True:
+        try:
+            choice = int(input("Select strategy (1-3) or Exit (4): "))
+            if 1 <= choice <= 4:
+                return choice
+            print("Please enter 1, 2, 3, or 4")
+        except ValueError:
+            print("Invalid input. Please enter a number.")
 
-# Calculate strategy returns for a basket of stocks
-def basket_strategy(data, basket, short_window=50, long_window=200):
-    results = pd.DataFrame()
+def evaluate_performance(df, strategy_name):
+    """Evaluate and print performance metrics"""
+    cumulative_returns = (1 + df['strategy_returns']).cumprod()
+    total_return = cumulative_returns.iloc[-1] - 1
     
-    for stock in basket:
-        stock_returns = moving_average_strategy(data, stock, short_window, long_window)
-        results[stock] = stock_returns
+    sharpe = np.sqrt(252) * (df['strategy_returns'].mean() / df['strategy_returns'].std())
     
-    # Calculate equal-weighted portfolio returns
-    results['Basket'] = results.mean(axis=1)
-    return results
+    peak = cumulative_returns.cummax()
+    max_drawdown = (cumulative_returns - peak).min()
+    
+    print(f"\n{strategy_name} Performance:")
+    print(f"Total Return: {total_return:.2%}")
+    print(f"Sharpe Ratio: {sharpe:.2f}")
+    print(f"Max Drawdown: {max_drawdown:.2%}")
+    return total_return
 
-# Calculate S&P 500 returns
-def calculate_sp500_returns(data):
-    sp500 = pd.DataFrame({'S&P500': data['SPY']})
-    sp500['daily_return'] = sp500['S&P500'].pct_change()
-    sp500['cumulative_sp500'] = (1 + sp500['daily_return']).cumprod()
-    return sp500['cumulative_sp500']
+def plot_results(results, strategy_name, show_signals=True):
+    """Visualize strategy performance"""
+    # Cumulative returns plot
+    plt.figure(figsize=(14, 6))
+    (1 + results['daily_returns']).cumprod().plot(label='Buy & Hold')
+    (1 + results['strategy_returns']).cumprod().plot(label=f'{strategy_name} Strategy')
+    plt.title(f"{strategy_name} Strategy Performance")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+    
+    if show_signals:
+        # Price and indicators plot
+        results['price'].plot(label='Price', alpha=0.5)
+        
+        if 'MA_50' in results.columns:  # Moving Average strategy
+            results['MA_50'].plot(label='50-day MA')
+            results['MA_200'].plot(label='200-day MA')
+        elif 'rolling_mean' in results.columns:  # Mean Reversion strategy
+            results['rolling_mean'].plot(label=f'{results.attrs["window"]}-day Mean')
+            upper = results['rolling_mean'] + results.attrs["z_threshold"]*results['rolling_std']
+            lower = results['rolling_mean'] - results.attrs["z_threshold"]*results['rolling_std']
+            upper.plot(label='Upper Band', linestyle='--', alpha=0.5)
+            lower.plot(label='Lower Band', linestyle='--', alpha=0.5)
+        
+        buy_signals = results[results['signal'] == 1]
+        sell_signals = results[results['signal'] == -1]
+        plt.scatter(buy_signals.index, buy_signals['price'], marker='^', color='g', label='Buy')
+        plt.scatter(sell_signals.index, sell_signals['price'], marker='v', color='r', label='Sell')
+        
+        plt.title(f"{strategy_name} Trading Signals")
+        plt.legend()
+        plt.show()
 
-# Plot results using Plotly
-def plot_results(basket_results, sp500_returns):
-    combined = pd.DataFrame({
-        'Basket Strategy': basket_results['Basket'],
-        'S&P 500': sp500_returns
-    }).dropna()
+def run_comparison(data):
+    """Compare both strategies"""
+    # Initialize strategies
+    ma_strategy = MovingAverageStrategy(50, 200)
+    mr_strategy = MeanReversionStrategy(20, 1.0)
     
-    # Create interactive plot
-    fig = go.Figure()
+    # Run strategies
+    ma_results = ma_strategy.calculate_returns(ma_strategy.generate_signals(data))
+    mr_results = mr_strategy.calculate_returns(mr_strategy.generate_signals(data))
     
-    # Add Basket Strategy line
-    fig.add_trace(go.Scatter(
-        x=combined.index,
-        y=combined['Basket Strategy'],
-        name='Basket Strategy',
-        line=dict(color='#1F77B4', width=3),
-        hovertemplate='Date: %{x}<br>Value: $%{y:.2f}<extra></extra>'
-    ))
+    # Store metadata for plotting
+    ma_results.attrs = {"strategy": "Moving Average"}
+    mr_results.attrs = {"strategy": "Mean Reversion", "window": 20, "z_threshold": 1.0}
     
-    # Add S&P 500 line
-    fig.add_trace(go.Scatter(
-        x=combined.index,
-        y=combined['S&P 500'],
-        name='S&P 500',
-        line=dict(color='#FF7F0E', width=3, dash='dot'),
-        hovertemplate='Date: %{x}<br>Value: $%{y:.2f}<extra></extra>'
-    ))
+    # Evaluate
+    ma_return = evaluate_performance(ma_results, "Moving Average (50/200)")
+    mr_return = evaluate_performance(mr_results, "Mean Reversion (Bollinger Bands)")
     
-    # Update layout
-    fig.update_layout(
-        title='Basket Strategy vs. S&P 500 Performance',
-        xaxis_title='Date',
-        yaxis_title='Growth of $1 Investment',
-        template='plotly_white',
-        hovermode='x unified',
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-        margin=dict(l=50, r=50, t=80, b=50),
-        height=600,
-        width=1000
-    )
+    # Plot comparison
+    plt.figure(figsize=(14, 6))
+    (1 + data['price'].pct_change()).cumprod().plot(label='Buy & Hold')
+    (1 + ma_results['strategy_returns']).cumprod().plot(label='MA Strategy')
+    (1 + mr_results['strategy_returns']).cumprod().plot(label='MR Strategy')
+    plt.title("Strategy Comparison")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
     
-    # Add annotations
-    fig.add_annotation(
-        x=combined.index[-1],
-        y=combined['Basket Strategy'].iloc[-1],
-        text=f"Basket: ${combined['Basket Strategy'].iloc[-1]:.2f}",
-        showarrow=True,
-        arrowhead=1,
-        ax=-50,
-        ay=-40
-    )
-    
-    fig.add_annotation(
-        x=combined.index[-1],
-        y=combined['S&P 500'].iloc[-1],
-        text=f"S&P 500: ${combined['S&P 500'].iloc[-1]:.2f}",
-        showarrow=True,
-        arrowhead=1,
-        ax=-50,
-        ay=40
-    )
-    
-    # Show plot
-    fig.show()
+    return ma_return, mr_return
 
-# Main execution
 if __name__ == "__main__":
-    # Define basket of stocks and benchmark
-    # TODO: Dynamically change basket
-    basket = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA']  # Example basket
-    benchmark = ['SPY']  # S&P 500 proxy
-    tickers = basket + benchmark
+    # Fetch data
+    data = get_historical_data('SPY')
     
-   
-
-    #Define date range
-    end_date = datetime.today()  # Today's date
-    start_date = datetime.today() - timedelta(days=30*365)  # 30 years ago
+    # Get user input
+    choice = get_strategy_choice()
     
-    # Download data
-    data = download_data(tickers, start_date, end_date)
-    
-    # Calculate basket strategy returns
-    basket_results = basket_strategy(data, basket)
-    
-    # Calculate S&P 500 returns
-    sp500_returns = calculate_sp500_returns(data)
-    
-    # Plot results
-    plot_results(basket_results, sp500_returns)
+    if choice == 1:  # Moving Average
+        strategy = MovingAverageStrategy(50, 200)
+        results = strategy.calculate_returns(strategy.generate_signals(data))
+        results.attrs = {"strategy": "Moving Average"}
+        evaluate_performance(results, "Moving Average (50/200)")
+        plot_results(results, "Moving Average")
+        
+    elif choice == 2:  # Mean Reversion
+        strategy = MeanReversionStrategy(20, 1.0)
+        results = strategy.calculate_returns(strategy.generate_signals(data))
+        results.attrs = {"strategy": "Mean Reversion", "window": 20, "z_threshold": 1.0}
+        evaluate_performance(results, "Mean Reversion (Bollinger Bands)")
+        plot_results(results, "Mean Reversion")
+        
+    elif choice == 3:  # Compare both
+        run_comparison(data)
