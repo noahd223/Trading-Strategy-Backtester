@@ -35,8 +35,6 @@ To set up the project environment, follow these steps:
    pip install -r requirements.txt
    ```
 
-   If `requirements.txt` is not provided, manually install the packages as used in the project scripts, such as `numpy`, `pandas`, `matplotlib`, `scikit-learn`, etc.
-
 ## Usage
 
 1. **Data Retrieval**:

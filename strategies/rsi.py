@@ -35,7 +35,6 @@ class RSIStrategy:
         df['signal'] = 0
         df['position'] = 0
         
-        # Vectorized conditions
         buy_condition = (df['rsi'] < self.oversold) & (df['price'] > df['ma'])
         sell_condition = (df['rsi'] > self.overbought)
         
