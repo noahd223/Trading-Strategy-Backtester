@@ -1,5 +1,5 @@
 # used for testing the rsi model run from parent directory of project using python .\models\rsi_tester.py
-# after configuring the rsi_model.py
+# after configuring the rsi_model.py (at the bottom of that file)
 import subprocess
 import re
 import numpy as np
@@ -29,7 +29,7 @@ min_return_diff = min(return_differences)
 avg_return_diff = np.mean(return_differences)
 
 # Print results
-print("\n===== Summary of 30 Runs =====")
+print(f"\n===== Summary of {num_runs} Runs =====")
 print(f"Max Return Difference: {max_return_diff:.2f}%")
 print(f"Min Return Difference: {min_return_diff:.2f}%")
 print(f"Avg Return Difference: {avg_return_diff:.2f}%")
