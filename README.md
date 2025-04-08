@@ -37,38 +37,7 @@ To set up the project environment, follow these steps:
 
 ## Usage
 
-1. **Data Retrieval**:
-
-   Use the `get_historical_data` function from the `data` module to fetch historical market data for a specific ticker symbol. For example:
-
-   ```python
-   from data.data import get_historical_data
-
-   data = get_historical_data('SPY')
-   ```
-
-2. **Strategy Implementation**:
-
-   Implement trading strategies using the classes provided in the `strategies` module. For instance, to use the RSI (Relative Strength Index) strategy:
-
-   ```python
-   from strategies.rsi import RSIStrategy
-
-   strategy = RSIStrategy(oversold=30, overbought=70, window=14, trend_window=200)
-   signals = strategy.generate_rsi_signals(data)
-   ```
-
-3. **Model Training and Optimization**:
-
-   Train machine learning models to optimize the trading strategies. The `models` directory contains scripts that utilize models like `RandomForestRegressor` for this purpose. For example:
-
-   ```python
-   from models.rsi_model import train_rsi_model
-
-   best_params = train_rsi_model(data)
-   ```
-
-4. **Backtesting**:
+**Backtesting**:
 
    Evaluate the performance of the trading strategy using the `backtester.py` script:
 
@@ -76,7 +45,7 @@ To set up the project environment, follow these steps:
    python backtester.py
    ```
 
-   This will output performance metrics and visualizations comparing the strategy's returns against a benchmark.
+   This will output performance metrics and visualizations comparing the strategy's returns against a benchmark (S&P 500 buy and hold)
 
 ## Contributing
 
