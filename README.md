@@ -47,14 +47,5 @@ To set up the project environment, follow these steps:
 
    This will output performance metrics and visualizations comparing the strategy's returns against a benchmark (S&P 500 buy and hold)
 
-## Contributing
-
-Contributions to enhance the functionality or add new features are welcome. Please follow these steps:
-
-1. Fork the repository.
-2. Create a new branch for your feature or bug fix.
-3. Commit your changes with descriptive messages.
-4. Push your changes to your fork.
-5. Submit a pull request to the main repository.
 
 *Note: This project is intended for educational purposes to explore the application of machine learning in trading strategies. It is not intended for live trading or financial advice.* 
